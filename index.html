@@ -15,6 +15,7 @@
     --card: #FFFFFF;
     --primary: #1E3A8A;
     --accent: #2563EB;
+    --whatsapp: #25D366;
     --border: #CBD5E1;
     --border-light: #E2E8F0;
     --text: #0F172A;
@@ -57,7 +58,11 @@
   .split-col label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
 
   .btn-submit { width: 100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
-  .btn-share { width: 100%; padding: 13px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
+  
+  .share-grid { display: flex; gap: 10px; margin-bottom: 14px; }
+  .btn-share-main { flex: 1; padding: 13px 8px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; }
+  .btn-share-wa { flex: 1; padding: 13px 8px; background: #128C7E; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; }
+
   .btn-add-q { background: #F1F5F9; border: 1px dashed var(--accent); color: var(--accent); width: 100%; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; margin-top: 8px; }
   
   .uni-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; background: white; border: 1px solid var(--border-light); border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
@@ -72,6 +77,18 @@
   .uni-col-head { min-width: 120px; font-size: 13px; font-weight: 700; color: var(--primary); }
   .btn-danger { background: none; border: none; color: var(--danger); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; }
   .cat-divider { background: #E2E8F0; font-weight: 800; color: var(--primary); text-transform: uppercase; font-size: 11px; }
+
+  /* In-App Clean Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+  .modal-overlay.active { display: flex; }
+  .modal-box { background: white; border-radius: 14px; padding: 20px; width: 100%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+  .modal-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .modal-text { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 8px; }
+  .modal-btn { flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal-btn-cancel { background: #E2E8F0; color: var(--text); }
+  .modal-btn-confirm { background: var(--danger); color: white; }
+  .modal-btn-save { background: var(--accent); color: white; }
 </style>
 </head>
 <body>
@@ -181,7 +198,7 @@
       </div>
       <div class="section-content">
         <div id="custom-questions-list"></div>
-        <button type="button" class="btn-add-q" onclick="addNewGlobalQuestion()">+ Add a New Question for All Unis</button>
+        <button type="button" class="btn-add-q" onclick="openAddQuestionModal()">+ Add a New Question for All Unis</button>
       </div>
     </div>
 
@@ -440,18 +457,56 @@
 
 <!-- TAB 3: COMPARE & SHARE -->
 <main class="container" id="tab-compare">
-  <button type="button" class="btn-share" onclick="shareSummary()">📤 Share Summary</button>
+  <div class="share-grid">
+    <button type="button" class="btn-share-main" onclick="shareSummary()">📤 Share Summary</button>
+    <button type="button" class="btn-share-wa" onclick="shareByWhatsApp()">💬 Share by WhatsApp</button>
+  </div>
   <div class="section-card" style="padding:10px;">
     <div class="q-title" style="padding:4px 8px;">Detailed Comparison Matrix</div>
     <div id="compare-content" style="overflow-x:auto;"></div>
   </div>
 </main>
 
+<!-- CUSTOM IN-APP MODAL: CONFIRM DELETE -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal-box">
+    <div class="modal-title">Delete University?</div>
+    <div class="modal-text" id="delete-modal-msg">Are you sure you want to remove this university? This action cannot be undone.</div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-cancel" onclick="closeModal('delete-modal')">Cancel</button>
+      <button type="button" class="modal-btn modal-btn-confirm" id="btn-confirm-delete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM IN-APP MODAL: ADD QUESTION -->
+<div class="modal-overlay" id="add-q-modal">
+  <div class="modal-box">
+    <div class="modal-title">Add Global Question</div>
+    <div class="modal-text">Enter the new question. It will appear on all universities automatically.</div>
+    <input type="text" id="new-q-input" placeholder="e.g. Is printing subsidized?" style="margin-bottom:14px;">
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-cancel" onclick="closeModal('add-q-modal')">Cancel</button>
+      <button type="button" class="modal-btn modal-btn-save" onclick="confirmAddGlobalQuestion()">Add Question</button>
+    </div>
+  </div>
+</div>
+
 <script>
   let currentRecord = {};
   let editingId = null;
+  let pendingDeleteId = null;
 
-  // Custom Global Questions Management
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  }
+
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  }
+
   function loadCustomQuestions() {
     try {
       return JSON.parse(localStorage.getItem('archCustomQuestions') || '[]');
@@ -464,26 +519,30 @@
     } catch(e) {}
   }
 
-  function addNewGlobalQuestion() {
-    const qText = prompt("Enter the new question to track across all universities:");
-    if (!qText || !qText.trim()) return;
+  function openAddQuestionModal() {
+    document.getElementById('new-q-input').value = '';
+    openModal('add-q-modal');
+  }
+
+  function confirmAddGlobalQuestion() {
+    const input = document.getElementById('new-q-input');
+    const qText = input ? input.value.trim() : '';
+    if (!qText) return;
 
     const list = loadCustomQuestions();
-    const newQ = {
+    list.push({
       id: 'cq_' + Date.now(),
-      prompt: qText.trim()
-    };
-    list.push(newQ);
+      prompt: qText
+    });
     saveCustomQuestions(list);
+    closeModal('add-q-modal');
     renderCustomQuestions();
   }
 
   function deleteGlobalQuestion(id) {
-    if (confirm("Remove this question from all universities?")) {
-      let list = loadCustomQuestions().filter(q => q.id !== id);
-      saveCustomQuestions(list);
-      renderCustomQuestions();
-    }
+    let list = loadCustomQuestions().filter(q => q.id !== id);
+    saveCustomQuestions(list);
+    renderCustomQuestions();
   }
 
   function renderCustomQuestions() {
@@ -608,11 +667,20 @@
     switchTab('entry');
   }
 
-  function deleteUni(id, e) {
+  function promptDeleteUni(id, name, e) {
     e.stopPropagation();
-    if (confirm('Delete this university?')) {
-      let list = loadAll().filter(u => u.id !== id);
+    pendingDeleteId = id;
+    document.getElementById('delete-modal-msg').innerText = `Are you sure you want to remove "${name}"? This action cannot be undone.`;
+    document.getElementById('btn-confirm-delete').onclick = executeDeleteUni;
+    openModal('delete-modal');
+  }
+
+  function executeDeleteUni() {
+    if (pendingDeleteId) {
+      let list = loadAll().filter(u => u.id !== pendingDeleteId);
       saveAll(list);
+      closeModal('delete-modal');
+      pendingDeleteId = null;
       renderList();
     }
   }
@@ -637,7 +705,6 @@
       if (el) currentRecord[tId] = el.value.trim();
     });
 
-    // Save custom questions data
     const customList = loadCustomQuestions();
     customList.forEach(q => {
       const el = document.getElementById(q.id);
@@ -675,7 +742,7 @@
           </div>
           <div style="text-align:right;">
             <div class="score-badge ${isHigh}">${score}</div>
-            <div style="margin-top:6px;"><button type="button" class="btn-danger" onclick="deleteUni('${u.id}', event)">Delete</button></div>
+            <div style="margin-top:6px;"><button type="button" class="btn-danger" onclick="promptDeleteUni('${u.id}', '${u.name}', event)">Delete</button></div>
           </div>
         </div>`;
     });
@@ -760,6 +827,7 @@
     container.innerHTML = html;
   }
 
+  // BUTTON 1: "Share Summary" (Clean HTML File via Share Sheet)
   function shareSummary() {
     const list = loadAll();
     if (list.length === 0) {
@@ -769,43 +837,135 @@
 
     const customQs = loadCustomQuestions();
 
-    let text = "🏛️ ARCHITECTURE OPEN DAY COMPARISON SUMMARY\n";
-    text += "========================================\n\n";
+    let doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Architecture Open Day Comparison</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #F8FAFC; color: #0F172A; max-width: 900px; margin: 0 auto; }
+  h1 { color: #1E3A8A; font-size: 22px; border-bottom: 2px solid #E2E8F0; padding-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #E2E8F0; font-size: 13px; }
+  th { background: #1E3A8A; color: white; font-weight: 700; }
+  .cat { background: #F1F5F9; font-weight: 800; color: #1E3A8A; text-transform: uppercase; font-size: 11px; }
+  .badge { background: #DCFCE7; color: #15803D; font-weight: 700; padding: 3px 8px; border-radius: 12px; display: inline-block; }
+</style></head><body>
+<h1>🏛️ Architecture Open Day Tour Report</h1>
+<p style="color:#64748B; font-size:13px;">Generated on ${new Date().toLocaleDateString('en-GB')}</p>
+<table>
+<thead><tr><th>Metric</th>`;
+    list.forEach(u => doc += `<th>${u.name}</th>`);
+    doc += `</tr></thead><tbody>`;
 
-    list.forEach(u => {
-      text += `📍 ${u.name.toUpperCase()}\n`;
-      text += `• Overall Score: ${u.overall_rating || '—'}/5\n`;
-      text += `• Studio Rating: ${u.studio_rating || '—'}/5 | Desk: ${u.q_desk || '—'} (${u.studio_access || '—'})\n`;
-      text += `• Workshop Rating: ${u.workshop_rating || '—'}/5 | Queues: ${u.q_queues || '—'}\n`;
-      text += `• Crits: ${u.q_crits_score || '—'}/5 | All-Nighters: ${u.q_allnighters || '—'}\n`;
-      text += `• Ethos: ${u.q_ethos || '—'} | ARB: ${u.q_arb || '—'}\n`;
-      text += `• Assessment: Studio ${u.split_design||'—'}% | Tech ${u.split_tech||'—'}% | Theory ${u.split_theory||'—'}%\n`;
-      text += `• Exams: ${u.exams_required || '—'}\n`;
-      text += `• Sports Weds: ${u.q_sports_wed || '—'} (Sports Fac: ${u.sports_rating || '—'}/5)\n`;
-      text += `• Halls Guarantee: ${u.accom_guarantee || '—'} | Hall Desk: ${u.accom_desk_size || '—'}\n`;
-      if (u.q_cost_notes) text += `• Material Costs: ${u.q_cost_notes}\n`;
-      if (u.q_maths_notes) text += `• Engineering/Maths: ${u.q_maths_notes}\n`;
-      if (u.model_carrying_notes) text += `• Carrying Models: ${u.model_carrying_notes}\n`;
-      
-      if (customQs.length > 0) {
-        text += `• Custom Notes:\n`;
-        customQs.forEach(cq => {
-          if (u[cq.id]) text += `   - ${cq.prompt}: ${u[cq.id]}\n`;
-        });
+    const rows = [
+      { cat: 'Ratings' },
+      { label: 'Overall Score (1-5)', key: 'overall_rating', badge: true },
+      { label: 'Studio Rating (1-5)', key: 'studio_rating' },
+      { label: 'Workshop Rating (1-5)', key: 'workshop_rating' },
+      { label: 'Sports Rating (1-5)', key: 'sports_rating' },
+      { cat: 'Studio Realities' },
+      { label: 'Ethos', key: 'q_ethos' },
+      { label: 'ARB Qualification', key: 'q_arb' },
+      { label: 'Desk Setup', key: 'q_desk' },
+      { label: 'Crits (1-5)', key: 'q_crits_score' },
+      { label: 'All-Nighters', key: 'q_allnighters' },
+      { label: 'Workshop Queues', key: 'q_queues' },
+      { label: 'Wednesday Sports', key: 'q_sports_wed' },
+      { label: 'Material Costs', key: 'q_cost_notes' },
+      { label: 'Maths Support', key: 'q_maths_notes' }
+    ];
+
+    if (customQs.length > 0) {
+      rows.push({ cat: 'Custom Questions' });
+      customQs.forEach(cq => rows.push({ label: cq.prompt, key: cq.id }));
+    }
+
+    rows.forEach(r => {
+      if (r.cat) {
+        doc += `<tr><td colspan="${list.length + 1}" class="cat">${r.cat}</td></tr>`;
+        return;
       }
-
-      text += "\n----------------------------------------\n\n";
+      doc += `<tr><td><strong>${r.label}</strong></td>`;
+      list.forEach(u => {
+        let val = u[r.key] || '—';
+        if (r.badge && val !== '—') val = `<span class="badge">${val} / 5</span>`;
+        doc += `<td>${val}</td>`;
+      });
+      doc += `</tr>`;
     });
 
-    if (navigator.share) {
+    doc += `</tbody></table></body></html>`;
+
+    const blob = new Blob([doc], { type: 'text/html' });
+    const file = new File([blob], 'Architecture_Open_Day_Comparison.html', { type: 'text/html' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
       navigator.share({
-        title: 'Architecture University Comparison',
-        text: text
+        files: [file],
+        title: 'Architecture University Comparison Report'
       }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(text);
-      alert('Detailed summary copied to clipboard! You can now paste it into Messages or WhatsApp.');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Architecture_Open_Day_Comparison.html';
+      a.click();
+      URL.revokeObjectURL(url);
     }
+  }
+
+  // BUTTON 2: "Share by WhatsApp" (Native WhatsApp Deep-Link with Markdown)
+  function shareByWhatsApp() {
+    const list = loadAll();
+    if (list.length === 0) {
+      alert('No universities to share yet.');
+      return;
+    }
+
+    const customQs = loadCustomQuestions();
+
+    let text = "🏛️ *ARCHITECTURE OPEN DAY TOUR SUMMARY*\n";
+    text += "════════════════════════\n\n";
+
+    list.forEach(u => {
+      text += `📍 *${u.name.toUpperCase()}*\n`;
+      text += `⭐ *Overall Score:* ${u.overall_rating || '—'}/5\n\n`;
+
+      text += `*Key Verdicts:*\n`;
+      text += `• *Ethos:* ${u.q_ethos || '—'}\n`;
+      text += `• *ARB Status:* ${u.q_arb || '—'}\n`;
+      text += `• *Desk Space:* ${u.q_desk || '—'}\n`;
+      text += `• *Crit Culture:* ${u.q_crits_score || '—'}/5\n`;
+      text += `• *All-Nighters:* ${u.q_allnighters || '—'}\n`;
+      text += `• *Workshop Queues:* ${u.q_queues || '—'}\n`;
+      text += `• *Wednesday Sports:* ${u.q_sports_wed || '—'}\n\n`;
+
+      text += `*Studio & Facilities:*\n`;
+      text += `• *Studio Rating:* ${u.studio_rating || '—'}/5 (${u.studio_access || '—'})\n`;
+      text += `• *Workshop Rating:* ${u.workshop_rating || '—'}/5\n`;
+      text += `• *Sports Rating:* ${u.sports_rating || '—'}/5\n\n`;
+
+      text += `*Academics & Practicalities:*\n`;
+      text += `• *Assessment:* Design ${u.split_design||'—'}% | Tech ${u.split_tech||'—'}% | Theory ${u.split_theory||'—'}%\n`;
+      text += `• *Exams:* ${u.exams_required || '—'}\n`;
+      if (u.q_cost_notes) text += `• *Materials Cost:* ${u.q_cost_notes}\n`;
+      if (u.q_maths_notes) text += `• *Maths Support:* ${u.q_maths_notes}\n`;
+      if (u.model_carrying_notes) text += `• *Carrying Models:* ${u.model_carrying_notes}\n`;
+
+      if (customQs.length > 0) {
+        let hasCustom = false;
+        let cText = `\n*Custom Criteria:*\n`;
+        customQs.forEach(cq => {
+          if (u[cq.id]) {
+            hasCustom = true;
+            cText += `• *${cq.prompt}:* ${u[cq.id]}\n`;
+          }
+        });
+        if (hasCustom) text += cText;
+      }
+
+      text += "\n────────────────────────\n\n";
+    });
+
+    const waUrl = 'whatsapp://send?text=' + encodeURIComponent(text);
+    window.location.href = waUrl;
   }
 
   renderList();
