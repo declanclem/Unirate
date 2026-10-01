@@ -3,16 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="Architecture University Open Day Scoring and Comparison Tool">
+<meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ArchScores">
-<title>Architecture University Tracker</title>
+<title>Architecture University Open Day Tracker</title>
 <style>
   :root {
     --bg: #F8FAFC;
     --card: #FFFFFF;
     --primary: #1E3A8A;
-    --primary-light: #EEF2FF;
     --accent: #2563EB;
     --border: #CBD5E1;
     --border-light: #E2E8F0;
@@ -31,19 +32,17 @@
   .container { padding: 14px; max-width: 700px; margin: 0 auto; display: none; }
   .container.active { display: block; }
   
-  /* Collapsible Cards */
   .section-card { background: var(--card); border-radius: 12px; margin-bottom: 14px; border: 1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; }
   .section-header { padding: 14px 16px; background: white; font-size: 15px; font-weight: 700; color: var(--primary); display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid transparent; }
   .section-header.active { border-bottom-color: var(--border-light); background: #F8FAFC; }
   .section-header .indicator { font-size: 12px; color: var(--muted); }
   .section-content { padding: 16px; }
 
-  .q-block { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9; }
+  .q-block { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9; position: relative; }
   .q-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
   .q-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
   .q-sub { font-size: 12px; color: var(--muted); margin-bottom: 8px; line-height: 1.3; }
 
-  /* Controls */
   .rating-row { display: flex; gap: 6px; margin-top: 6px; }
   .rate-btn { flex: 1; height: 38px; border-radius: 8px; border: 1px solid var(--border-light); background: #F8FAFC; font-weight: 700; font-size: 15px; cursor: pointer; color: var(--text); }
   .rate-btn.selected { background: var(--accent); color: white; border-color: var(--accent); }
@@ -51,7 +50,7 @@
   .chip { padding: 7px 11px; border-radius: 20px; border: 1px solid var(--border-light); background: #F8FAFC; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text); }
   .chip.selected { background: #DBEAFE; color: var(--accent); border-color: var(--accent); font-weight: 700; }
   
-  input[type="text"], input[type="number"], textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; font-size: 14px; margin-top: 4px; background: #FFF; color: var(--text); }
+  input[type="text"], textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; font-size: 14px; margin-top: 4px; background: #FFF; color: var(--text); }
   textarea { height: 55px; resize: none; }
   .split-row { display: flex; gap: 8px; }
   .split-col { flex: 1; }
@@ -59,15 +58,14 @@
 
   .btn-submit { width: 100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
   .btn-share { width: 100%; padding: 13px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
+  .btn-add-q { background: #F1F5F9; border: 1px dashed var(--accent); color: var(--accent); width: 100%; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; margin-top: 8px; }
   
-  /* Uni List Card */
   .uni-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; background: white; border: 1px solid var(--border-light); border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
   .uni-item-title { font-size: 16px; font-weight: 700; color: var(--primary); }
   .uni-item-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
   .score-badge { display: inline-block; padding: 4px 10px; border-radius: 16px; font-weight: 700; background: #E2E8F0; font-size: 13px; }
   .score-badge.high { background: #DCFCE7; color: #15803D; }
 
-  /* Comparison Matrix */
   table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
   th, td { padding: 9px 8px; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: top; }
   th { background: #F1F5F9; font-weight: 700; color: var(--muted); min-width: 140px; }
@@ -80,378 +78,460 @@
 
 <header>
   <h1>Architecture Open Day Tracker</h1>
-  <div class="nav-tabs">
-    <button class="nav-btn active" id="btn-tab-list" onclick="switchTab('list')">Saved Unis</button>
-    <button class="nav-btn" id="btn-tab-entry" onclick="startNewUni()">+ Add Uni</button>
-    <button class="nav-btn" id="btn-tab-compare" onclick="switchTab('compare')">Compare</button>
-  </div>
+  <nav class="nav-tabs">
+    <button type="button" class="nav-btn active" id="btn-tab-list" onclick="switchTab('list')">Saved Unis</button>
+    <button type="button" class="nav-btn" id="btn-tab-entry" onclick="startNewUni()">+ Add Uni</button>
+    <button type="button" class="nav-btn" id="btn-tab-compare" onclick="switchTab('compare')">Compare</button>
+  </nav>
 </header>
 
 <!-- TAB 1: SAVED UNIVERSITIES LIST -->
-<div class="container active" id="tab-list">
+<main class="container active" id="tab-list">
   <div id="uni-list-container"></div>
-  <button class="btn-submit" onclick="startNewUni()">+ Add New University</button>
-</div>
+  <button type="button" class="btn-submit" onclick="startNewUni()">+ Add New University</button>
+</main>
 
 <!-- TAB 2: FULL SCORECARD ENTRY FORM -->
-<div class="container" id="tab-entry">
-  <div class="section-card" style="padding:16px;">
-    <label style="font-weight:700; font-size:12px; color:var(--muted); text-transform:uppercase;">University Name & Date</label>
-    <input type="text" id="uni-name" placeholder="e.g. Bath, Sheffield, UCL" style="font-size:17px; font-weight:700;">
-  </div>
+<main class="container" id="tab-entry">
+  <form id="evaluation-form" onsubmit="return false;" autocomplete="off">
+    <div class="section-card" style="padding:16px;">
+      <label for="uni-name" style="font-weight:700; font-size:12px; color:var(--muted); text-transform:uppercase;">University Name & Date</label>
+      <input type="text" id="uni-name" name="uni-name" placeholder="e.g. Bath, Sheffield, UCL" style="font-size:17px; font-weight:700;">
+    </div>
 
-  <!-- SECTION: 10-WORD CORE QUESTIONS -->
-  <div class="section-card">
-    <div class="section-header active" onclick="toggleSection(this)">
-      <span>⚡ 9 Quick-Ask Questions</span>
-      <span class="indicator">▲</span>
-    </div>
-    <div class="section-content">
-      <div class="q-block">
-        <div class="q-title">1. "Is this school mostly artistic, technical, or research focused?"</div>
-        <div class="chip-group" data-key="q_ethos">
-          <div class="chip" onclick="toggleChip(this)">Artistic</div>
-          <div class="chip" onclick="toggleChip(this)">Technical</div>
-          <div class="chip" onclick="toggleChip(this)">Research</div>
-          <div class="chip" onclick="toggleChip(this)">Balanced</div>
-        </div>
+    <!-- SECTION: 10-WORD CORE QUESTIONS -->
+    <div class="section-card">
+      <div class="section-header active" onclick="toggleSection(this)">
+        <span>⚡ 9 Quick-Ask Questions</span>
+        <span class="indicator">▲</span>
       </div>
-      <div class="q-block">
-        <div class="q-title">2. "With the new ARB structure, what qualification do we get?"</div>
-        <div class="chip-group" data-key="q_arb">
-          <div class="chip" onclick="toggleChip(this)">Part 1</div>
-          <div class="chip" onclick="toggleChip(this)">Integrated MArch</div>
-          <div class="chip" onclick="toggleChip(this)">Transitioning</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">3. "How are crits run, and is feedback constructive?"</div>
-        <div class="q-sub">Score crit culture: 1 (Adversarial/harsh) to 5 (Constructive/supportive)</div>
-        <div class="rating-row" data-key="q_crits_score">
-          <button class="rate-btn" onclick="setRate(this, 1)">1</button>
-          <button class="rate-btn" onclick="setRate(this, 2)">2</button>
-          <button class="rate-btn" onclick="setRate(this, 3)">3</button>
-          <button class="rate-btn" onclick="setRate(this, 4)">4</button>
-          <button class="rate-btn" onclick="setRate(this, 5)">5</button>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">4. "How much engineering maths is needed with an Art background?"</div>
-        <input type="text" id="q_maths_notes" placeholder="e.g. Minimal calc, visual physics, separate math tutors">
-      </div>
-      <div class="q-block">
-        <div class="q-title">5. "Do you get your own permanent desk all year?"</div>
-        <div class="chip-group" data-key="q_desk">
-          <div class="chip" onclick="toggleChip(this)">Dedicated Personal Desk</div>
-          <div class="chip" onclick="toggleChip(this)">Hot-Desking</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">6. "How much do you spend on materials and printing?"</div>
-        <input type="text" id="q_cost_notes" placeholder="e.g. £500-£1000/yr, free laser time, subsidized shop">
-      </div>
-      <div class="q-block">
-        <div class="q-title">7. "Are queues for workshop equipment bad before deadlines?"</div>
-        <div class="chip-group" data-key="q_queues">
-          <div class="chip" onclick="toggleChip(this)">Fine / Managed Online</div>
-          <div class="chip" onclick="toggleChip(this)">Hours-Long Queues</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">8. "Do students here regularly have to pull all-nighters?"</div>
-        <div class="chip-group" data-key="q_allnighters">
-          <div class="chip" onclick="toggleChip(this)">Rare / Actively Discouraged</div>
-          <div class="chip" onclick="toggleChip(this)">Frequent / Normal Studio Culture</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">9. "Are Wednesday afternoons actually kept free for sports?"</div>
-        <div class="chip-group" data-key="q_sports_wed">
-          <div class="chip" onclick="toggleChip(this)">Kept Free (Protected)</div>
-          <div class="chip" onclick="toggleChip(this)">Studio Clashes Regularly</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 1: STUDIOS & WORKING CULTURE -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <span>1. Studios & Working Culture</span>
-      <span class="indicator">▼</span>
-    </div>
-    <div class="section-content" style="display:none;">
-      <div class="q-block">
-        <div class="q-title">Building & Studio Access Hours</div>
-        <div class="chip-group" data-key="studio_access">
-          <div class="chip" onclick="toggleChip(this)">24/7 Access</div>
-          <div class="chip" onclick="toggleChip(this)">Closes Late (e.g. 10pm)</div>
-          <div class="chip" onclick="toggleChip(this)">Strict Evening/Weekend Shut</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">Storage & Security</div>
-        <div class="chip-group" data-key="studio_storage">
-          <div class="chip" onclick="toggleChip(this)">Lockable Under-Desk Storage</div>
-          <div class="chip" onclick="toggleChip(this)">Shared / No Secure Storage</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">Studio Environment & Light</div>
-        <input type="text" id="studio_light_notes" placeholder="Natural daylight, ventilation, clutter, space per desk...">
-      </div>
-      <div class="q-block">
-        <div class="q-title">Studio Quality Rating (1–5)</div>
-        <div class="rating-row" data-key="studio_rating">
-          <button class="rate-btn" onclick="setRate(this, 1)">1</button>
-          <button class="rate-btn" onclick="setRate(this, 2)">2</button>
-          <button class="rate-btn" onclick="setRate(this, 3)">3</button>
-          <button class="rate-btn" onclick="setRate(this, 4)">4</button>
-          <button class="rate-btn" onclick="setRate(this, 5)">5</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 2: WORKSHOPS & FABRICATION -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <span>2. Workshops & Fabrication Areas</span>
-      <span class="indicator">▼</span>
-    </div>
-    <div class="section-content" style="display:none;">
-      <div class="q-block">
-        <div class="q-title">Fabrication Equipment Available</div>
-        <input type="text" id="workshop_equipment" placeholder="Laser cutters, 3D printers, CNC router, casting, timber/metal...">
-      </div>
-      <div class="q-block">
-        <div class="q-title">Full-Time Workshop Technicians</div>
-        <div class="chip-group" data-key="workshop_staff">
-          <div class="chip" onclick="toggleChip(this)">Dedicated Technicians on Hand</div>
-          <div class="chip" onclick="toggleChip(this)">Limited / Occasional Support</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">Printing & Materials Support</div>
-        <input type="text" id="workshop_material_shop" placeholder="On-site shop? Subsidized timber/acrylic? Free A1/A0 plotting?">
-      </div>
-      <div class="q-block">
-        <div class="q-title">Workshop Quality Rating (1–5)</div>
-        <div class="rating-row" data-key="workshop_rating">
-          <button class="rate-btn" onclick="setRate(this, 1)">1</button>
-          <button class="rate-btn" onclick="setRate(this, 2)">2</button>
-          <button class="rate-btn" onclick="setRate(this, 3)">3</button>
-          <button class="rate-btn" onclick="setRate(this, 4)">4</button>
-          <button class="rate-btn" onclick="setRate(this, 5)">5</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 3: TEACHING & ASSESSMENT -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <span>3. Teaching, Modules & Assessment</span>
-      <span class="indicator">▼</span>
-    </div>
-    <div class="section-content" style="display:none;">
-      <div class="q-block">
-        <div class="q-title">Approximate Assessment Split (%)</div>
-        <div class="split-row">
-          <div class="split-col">
-            <label>Design Studio</label>
-            <input type="text" id="split_design" placeholder="e.g. 70%">
+      <div class="section-content">
+        <div class="q-block">
+          <div class="q-title">1. "Is this school mostly artistic, technical, or research focused?"</div>
+          <div class="chip-group" data-key="q_ethos">
+            <div class="chip" onclick="toggleChip(this)">Artistic</div>
+            <div class="chip" onclick="toggleChip(this)">Technical</div>
+            <div class="chip" onclick="toggleChip(this)">Research</div>
+            <div class="chip" onclick="toggleChip(this)">Balanced</div>
           </div>
-          <div class="split-col">
-            <label>Tech / Struct</label>
-            <input type="text" id="split_tech" placeholder="e.g. 15%">
+        </div>
+        <div class="q-block">
+          <div class="q-title">2. "With the new ARB structure, what qualification do we get?"</div>
+          <div class="chip-group" data-key="q_arb">
+            <div class="chip" onclick="toggleChip(this)">Part 1</div>
+            <div class="chip" onclick="toggleChip(this)">Integrated MArch</div>
+            <div class="chip" onclick="toggleChip(this)">Transitioning</div>
           </div>
-          <div class="split-col">
-            <label>History / Theory</label>
-            <input type="text" id="split_theory" placeholder="e.g. 15%">
+        </div>
+        <div class="q-block">
+          <div class="q-title">3. "How are crits run, and is feedback constructive?"</div>
+          <div class="q-sub">Score crit culture: 1 (Adversarial/harsh) to 5 (Constructive/supportive)</div>
+          <div class="rating-row" data-key="q_crits_score">
+            <button type="button" class="rate-btn" onclick="setRate(this, 1)">1</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 2)">2</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 3)">3</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 4)">4</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 5)">5</button>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">4. "How much engineering maths is needed with an Art background?"</div>
+          <input type="text" id="q_maths_notes" name="q_maths_notes" placeholder="e.g. Minimal calc, visual physics, separate math tutors">
+        </div>
+        <div class="q-block">
+          <div class="q-title">5. "Do you get your own permanent desk all year?"</div>
+          <div class="chip-group" data-key="q_desk">
+            <div class="chip" onclick="toggleChip(this)">Dedicated Personal Desk</div>
+            <div class="chip" onclick="toggleChip(this)">Hot-Desking</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">6. "How much do you spend on materials and printing?"</div>
+          <input type="text" id="q_cost_notes" name="q_cost_notes" placeholder="e.g. £500-£1000/yr, free laser time, subsidized shop">
+        </div>
+        <div class="q-block">
+          <div class="q-title">7. "Are queues for workshop equipment bad before deadlines?"</div>
+          <div class="chip-group" data-key="q_queues">
+            <div class="chip" onclick="toggleChip(this)">Fine / Managed Online</div>
+            <div class="chip" onclick="toggleChip(this)">Hours-Long Queues</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">8. "Do students here regularly have to pull all-nighters?"</div>
+          <div class="chip-group" data-key="q_allnighters">
+            <div class="chip" onclick="toggleChip(this)">Rare / Actively Discouraged</div>
+            <div class="chip" onclick="toggleChip(this)">Frequent / Normal Studio Culture</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">9. "Are Wednesday afternoons actually kept free for sports?"</div>
+          <div class="chip-group" data-key="q_sports_wed">
+            <div class="chip" onclick="toggleChip(this)">Kept Free (Protected)</div>
+            <div class="chip" onclick="toggleChip(this)">Studio Clashes Regularly</div>
           </div>
         </div>
       </div>
-      <div class="q-block">
-        <div class="q-title">Written Exams Required?</div>
-        <div class="chip-group" data-key="exams_required">
-          <div class="chip" onclick="toggleChip(this)">100% Coursework / No Written Exams</div>
-          <div class="chip" onclick="toggleChip(this)">Written Exams in Structures/Theory</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">Tutorial Setup</div>
-        <div class="chip-group" data-key="tutorial_style">
-          <div class="chip" onclick="toggleChip(this)">1-on-1 Weekly</div>
-          <div class="chip" onclick="toggleChip(this)">Small Table Groups</div>
-          <div class="chip" onclick="toggleChip(this)">Large Group Crits</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">Software Taught in Year 1</div>
-        <input type="text" id="software_taught" placeholder="Rhino, AutoCAD, Revit, Adobe Suite - taught formally or self-study?">
-      </div>
     </div>
-  </div>
 
-  <!-- SECTION 4: PORTFOLIO REQUIREMENTS -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <span>4. Portfolio & Admissions</span>
-      <span class="indicator">▼</span>
-    </div>
-    <div class="section-content" style="display:none;">
-      <div class="q-block">
-        <div class="q-title">Review Method</div>
-        <div class="chip-group" data-key="portfolio_format">
-          <div class="chip" onclick="toggleChip(this)">Digital PDF Upload</div>
-          <div class="chip" onclick="toggleChip(this)">In-Person Interview</div>
-          <div class="chip" onclick="toggleChip(this)">Online Interview + Screen Share</div>
-        </div>
+    <!-- SECTION: CUSTOM GLOBAL QUESTIONS -->
+    <div class="section-card">
+      <div class="section-header active" onclick="toggleSection(this)">
+        <span>➕ Custom Questions (Shared Across All)</span>
+        <span class="indicator">▲</span>
       </div>
-      <div class="q-block">
-        <div class="q-title">Page / Project Limits</div>
-        <input type="text" id="portfolio_limits" placeholder="e.g. 10-15 pages, 20 slides, or physical sketchbook">
-      </div>
-      <div class="q-block">
-        <div class="q-title">Admissions Tutors Prioritize</div>
-        <input type="text" id="portfolio_priority" placeholder="e.g. Hand-drawing, exploratory models, sketchbook process, finished graphics">
+      <div class="section-content">
+        <div id="custom-questions-list"></div>
+        <button type="button" class="btn-add-q" onclick="addNewGlobalQuestion()">+ Add a New Question for All Unis</button>
       </div>
     </div>
-  </div>
 
-  <!-- SECTION 5: LOCATION & LOGISTICS -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <span>5. Location & Campus Logistics</span>
-      <span class="indicator">▼</span>
-    </div>
-    <div class="section-content" style="display:none;">
-      <div class="q-block">
-        <div class="q-title">Architecture Building Location</div>
-        <div class="chip-group" data-key="building_location">
-          <div class="chip" onclick="toggleChip(this)">Main Campus</div>
-          <div class="chip" onclick="toggleChip(this)">Town / City Centre</div>
-          <div class="chip" onclick="toggleChip(this)">Isolated Arts Annex</div>
+    <!-- SECTION 1: STUDIOS & WORKING CULTURE -->
+    <div class="section-card">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>1. Studios & Working Culture</span>
+        <span class="indicator">▼</span>
+      </div>
+      <div class="section-content" style="display:none;">
+        <div class="q-block">
+          <div class="q-title">Building & Studio Access Hours</div>
+          <div class="chip-group" data-key="studio_access">
+            <div class="chip" onclick="toggleChip(this)">24/7 Access</div>
+            <div class="chip" onclick="toggleChip(this)">Closes Late (e.g. 10pm)</div>
+            <div class="chip" onclick="toggleChip(this)">Strict Evening/Weekend Shut</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Storage & Security</div>
+          <div class="chip-group" data-key="studio_storage">
+            <div class="chip" onclick="toggleChip(this)">Lockable Under-Desk Storage</div>
+            <div class="chip" onclick="toggleChip(this)">Shared / No Secure Storage</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Studio Environment & Light</div>
+          <input type="text" id="studio_light_notes" name="studio_light_notes" placeholder="Natural daylight, ventilation, clutter, space per desk...">
+        </div>
+        <div class="q-block">
+          <div class="q-title">Studio Quality Rating (1–5)</div>
+          <div class="rating-row" data-key="studio_rating">
+            <button type="button" class="rate-btn" onclick="setRate(this, 1)">1</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 2)">2</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 3)">3</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 4)">4</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 5)">5</button>
+          </div>
         </div>
       </div>
-      <div class="q-block">
-        <div class="q-title">Transporting Scale Models (Halls to Studio)</div>
-        <input type="text" id="model_carrying_notes" placeholder="Walking distance, hills, bus required, weather protection...">
-      </div>
-      <div class="q-block">
-        <div class="q-title">Nearby Amenities</div>
-        <input type="text" id="amenities_notes" placeholder="Late-night food, library, art supply shops nearby...">
-      </div>
     </div>
-  </div>
 
-  <!-- SECTION 6: ACCOMMODATION -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <span>6. Accommodation</span>
-      <span class="indicator">▼</span>
-    </div>
-    <div class="section-content" style="display:none;">
-      <div class="q-block">
-        <div class="q-title">Year 1 Guarantee</div>
-        <div class="chip-group" data-key="accom_guarantee">
-          <div class="chip" onclick="toggleChip(this)">Guaranteed (if Firm choice)</div>
-          <div class="chip" onclick="toggleChip(this)">Ballot / Not Guaranteed</div>
+    <!-- SECTION 2: WORKSHOPS & FABRICATION -->
+    <div class="section-card">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>2. Workshops & Fabrication Areas</span>
+        <span class="indicator">▼</span>
+      </div>
+      <div class="section-content" style="display:none;">
+        <div class="q-block">
+          <div class="q-title">Fabrication Equipment Available</div>
+          <input type="text" id="workshop_equipment" name="workshop_equipment" placeholder="Laser cutters, 3D printers, CNC router, casting, timber/metal...">
+        </div>
+        <div class="q-block">
+          <div class="q-title">Full-Time Workshop Technicians</div>
+          <div class="chip-group" data-key="workshop_staff">
+            <div class="chip" onclick="toggleChip(this)">Dedicated Technicians on Hand</div>
+            <div class="chip" onclick="toggleChip(this)">Limited / Occasional Support</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Printing & Materials Support</div>
+          <input type="text" id="workshop_material_shop" name="workshop_material_shop" placeholder="On-site shop? Subsidized timber/acrylic? Free A1/A0 plotting?">
+        </div>
+        <div class="q-block">
+          <div class="q-title">Workshop Quality Rating (1–5)</div>
+          <div class="rating-row" data-key="workshop_rating">
+            <button type="button" class="rate-btn" onclick="setRate(this, 1)">1</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 2)">2</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 3)">3</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 4)">4</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 5)">5</button>
+          </div>
         </div>
       </div>
-      <div class="q-block">
-        <div class="q-title">Bedroom Desk Size (for Cutting Mat)</div>
-        <div class="chip-group" data-key="accom_desk_size">
-          <div class="chip" onclick="toggleChip(this)">Large (Fits A1 Mat)</div>
-          <div class="chip" onclick="toggleChip(this)">Standard (Laptop Only)</div>
-        </div>
-      </div>
-      <div class="q-block">
-        <div class="q-title">Years 2 & 3 Housing Market</div>
-        <input type="text" id="accom_costs_notes" placeholder="Local private rent range, distance from campus...">
-      </div>
     </div>
-  </div>
 
-  <!-- SECTION 7: SPORTS FACILITIES -->
-  <div class="section-card">
-    <div class="section-header" onclick="toggleSection(this)">
-      <span>7. Sports & Fitness Facilities</span>
-      <span class="indicator">▼</span>
-    </div>
-    <div class="section-content" style="display:none;">
-      <div class="q-block">
-        <div class="q-title">Gym / Pool / Pitch Quality</div>
-        <input type="text" id="sports_quality_notes" placeholder="Main gym, swimming pool, sports halls, outdoor pitches...">
+    <!-- SECTION 3: TEACHING & ASSESSMENT -->
+    <div class="section-card">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>3. Teaching, Modules & Assessment</span>
+        <span class="indicator">▼</span>
       </div>
-      <div class="q-block">
-        <div class="q-title">Distance from Architecture Studios</div>
-        <div class="chip-group" data-key="sports_distance">
-          <div class="chip" onclick="toggleChip(this)">Adjacent / 5 min walk</div>
-          <div class="chip" onclick="toggleChip(this)">Across Campus (15 min)</div>
-          <div class="chip" onclick="toggleChip(this)">Separate Sports Campus (Bus)</div>
+      <div class="section-content" style="display:none;">
+        <div class="q-block">
+          <div class="q-title">Approximate Assessment Split (%)</div>
+          <div class="split-row">
+            <div class="split-col">
+              <label for="split_design">Design Studio</label>
+              <input type="text" id="split_design" name="split_design" placeholder="e.g. 70%">
+            </div>
+            <div class="split-col">
+              <label for="split_tech">Tech / Struct</label>
+              <input type="text" id="split_tech" name="split_tech" placeholder="e.g. 15%">
+            </div>
+            <div class="split-col">
+              <label for="split_theory">History / Theory</label>
+              <input type="text" id="split_theory" name="split_theory" placeholder="e.g. 15%">
+            </div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Written Exams Required?</div>
+          <div class="chip-group" data-key="exams_required">
+            <div class="chip" onclick="toggleChip(this)">100% Coursework / No Written Exams</div>
+            <div class="chip" onclick="toggleChip(this)">Written Exams in Structures/Theory</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Tutorial Setup</div>
+          <div class="chip-group" data-key="tutorial_style">
+            <div class="chip" onclick="toggleChip(this)">1-on-1 Weekly</div>
+            <div class="chip" onclick="toggleChip(this)">Small Table Groups</div>
+            <div class="chip" onclick="toggleChip(this)">Large Group Crits</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Software Taught in Year 1</div>
+          <input type="text" id="software_taught" name="software_taught" placeholder="Rhino, AutoCAD, Revit, Adobe Suite - taught formally or self-study?">
         </div>
       </div>
-      <div class="q-block">
-        <div class="q-title">Membership & Accessibility</div>
-        <input type="text" id="sports_cost_notes" placeholder="e.g. Free for students, £150-£250/yr, peak booking rules">
+    </div>
+
+    <!-- SECTION 4: PORTFOLIO REQUIREMENTS -->
+    <div class="section-card">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>4. Portfolio & Admissions</span>
+        <span class="indicator">▼</span>
       </div>
-      <div class="q-block">
-        <div class="q-title">Sports Facilities Rating (1–5)</div>
-        <div class="rating-row" data-key="sports_rating">
-          <button class="rate-btn" onclick="setRate(this, 1)">1</button>
-          <button class="rate-btn" onclick="setRate(this, 2)">2</button>
-          <button class="rate-btn" onclick="setRate(this, 3)">3</button>
-          <button class="rate-btn" onclick="setRate(this, 4)">4</button>
-          <button class="rate-btn" onclick="setRate(this, 5)">5</button>
+      <div class="section-content" style="display:none;">
+        <div class="q-block">
+          <div class="q-title">Review Method</div>
+          <div class="chip-group" data-key="portfolio_format">
+            <div class="chip" onclick="toggleChip(this)">Digital PDF Upload</div>
+            <div class="chip" onclick="toggleChip(this)">In-Person Interview</div>
+            <div class="chip" onclick="toggleChip(this)">Online Interview + Screen Share</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Page / Project Limits</div>
+          <input type="text" id="portfolio_limits" name="portfolio_limits" placeholder="e.g. 10-15 pages, 20 slides, or physical sketchbook">
+        </div>
+        <div class="q-block">
+          <div class="q-title">Admissions Tutors Prioritize</div>
+          <input type="text" id="portfolio_priority" name="portfolio_priority" placeholder="e.g. Hand-drawing, exploratory models, sketchbook process, finished graphics">
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- OVERALL IMPRESSION -->
-  <div class="section-card" style="padding:16px;">
-    <div class="q-title">OVERALL UNIVERSITY SCORE (1–5)</div>
-    <div class="q-sub">Gut feeling, balance of studio culture, facilities, and campus life</div>
-    <div class="rating-row" data-key="overall_rating">
-      <button class="rate-btn" onclick="setRate(this, 1)">1</button>
-      <button class="rate-btn" onclick="setRate(this, 2)">2</button>
-      <button class="rate-btn" onclick="setRate(this, 3)">3</button>
-      <button class="rate-btn" onclick="setRate(this, 4)">4</button>
-      <button class="rate-btn" onclick="setRate(this, 5)">5</button>
+    <!-- SECTION 5: LOCATION & LOGISTICS -->
+    <div class="section-card">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>5. Location & Campus Logistics</span>
+        <span class="indicator">▼</span>
+      </div>
+      <div class="section-content" style="display:none;">
+        <div class="q-block">
+          <div class="q-title">Architecture Building Location</div>
+          <div class="chip-group" data-key="building_location">
+            <div class="chip" onclick="toggleChip(this)">Main Campus</div>
+            <div class="chip" onclick="toggleChip(this)">Town / City Centre</div>
+            <div class="chip" onclick="toggleChip(this)">Isolated Arts Annex</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Transporting Scale Models (Halls to Studio)</div>
+          <input type="text" id="model_carrying_notes" name="model_carrying_notes" placeholder="Walking distance, hills, bus required, weather protection...">
+        </div>
+        <div class="q-block">
+          <div class="q-title">Nearby Amenities</div>
+          <input type="text" id="amenities_notes" name="amenities_notes" placeholder="Late-night food, library, art supply shops nearby...">
+        </div>
+      </div>
     </div>
-  </div>
 
-  <button class="btn-submit" onclick="saveRecord()">Save University</button>
-</div>
+    <!-- SECTION 6: ACCOMMODATION -->
+    <div class="section-card">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>6. Accommodation</span>
+        <span class="indicator">▼</span>
+      </div>
+      <div class="section-content" style="display:none;">
+        <div class="q-block">
+          <div class="q-title">Year 1 Guarantee</div>
+          <div class="chip-group" data-key="accom_guarantee">
+            <div class="chip" onclick="toggleChip(this)">Guaranteed (if Firm choice)</div>
+            <div class="chip" onclick="toggleChip(this)">Ballot / Not Guaranteed</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Bedroom Desk Size (for Cutting Mat)</div>
+          <div class="chip-group" data-key="accom_desk_size">
+            <div class="chip" onclick="toggleChip(this)">Large (Fits A1 Mat)</div>
+            <div class="chip" onclick="toggleChip(this)">Standard (Laptop Only)</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Years 2 & 3 Housing Market</div>
+          <input type="text" id="accom_costs_notes" name="accom_costs_notes" placeholder="Local private rent range, distance from campus...">
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 7: SPORTS FACILITIES -->
+    <div class="section-card">
+      <div class="section-header" onclick="toggleSection(this)">
+        <span>7. Sports & Fitness Facilities</span>
+        <span class="indicator">▼</span>
+      </div>
+      <div class="section-content" style="display:none;">
+        <div class="q-block">
+          <div class="q-title">Gym / Pool / Pitch Quality</div>
+          <input type="text" id="sports_quality_notes" name="sports_quality_notes" placeholder="Main gym, swimming pool, sports halls, outdoor pitches...">
+        </div>
+        <div class="q-block">
+          <div class="q-title">Distance from Architecture Studios</div>
+          <div class="chip-group" data-key="sports_distance">
+            <div class="chip" onclick="toggleChip(this)">Adjacent / 5 min walk</div>
+            <div class="chip" onclick="toggleChip(this)">Across Campus (15 min)</div>
+            <div class="chip" onclick="toggleChip(this)">Separate Sports Campus (Bus)</div>
+          </div>
+        </div>
+        <div class="q-block">
+          <div class="q-title">Membership & Accessibility</div>
+          <input type="text" id="sports_cost_notes" name="sports_cost_notes" placeholder="e.g. Free for students, £150-£250/yr, peak booking rules">
+        </div>
+        <div class="q-block">
+          <div class="q-title">Sports Facilities Rating (1–5)</div>
+          <div class="rating-row" data-key="sports_rating">
+            <button type="button" class="rate-btn" onclick="setRate(this, 1)">1</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 2)">2</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 3)">3</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 4)">4</button>
+            <button type="button" class="rate-btn" onclick="setRate(this, 5)">5</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERALL IMPRESSION -->
+    <div class="section-card" style="padding:16px;">
+      <div class="q-title">OVERALL UNIVERSITY SCORE (1–5)</div>
+      <div class="q-sub">Gut feeling, balance of studio culture, facilities, and campus life</div>
+      <div class="rating-row" data-key="overall_rating">
+        <button type="button" class="rate-btn" onclick="setRate(this, 1)">1</button>
+        <button type="button" class="rate-btn" onclick="setRate(this, 2)">2</button>
+        <button type="button" class="rate-btn" onclick="setRate(this, 3)">3</button>
+        <button type="button" class="rate-btn" onclick="setRate(this, 4)">4</button>
+        <button type="button" class="rate-btn" onclick="setRate(this, 5)">5</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn-submit" onclick="saveRecord()">Save University</button>
+  </form>
+</main>
 
 <!-- TAB 3: COMPARE & SHARE -->
-<div class="container" id="tab-compare">
-  <button class="btn-share" onclick="shareSummary()">📤 Share Summary</button>
+<main class="container" id="tab-compare">
+  <button type="button" class="btn-share" onclick="shareSummary()">📤 Share Summary</button>
   <div class="section-card" style="padding:10px;">
     <div class="q-title" style="padding:4px 8px;">Detailed Comparison Matrix</div>
     <div id="compare-content" style="overflow-x:auto;"></div>
   </div>
-</div>
+</main>
 
 <script>
   let currentRecord = {};
   let editingId = null;
 
+  // Custom Global Questions Management
+  function loadCustomQuestions() {
+    try {
+      return JSON.parse(localStorage.getItem('archCustomQuestions') || '[]');
+    } catch(e) { return []; }
+  }
+
+  function saveCustomQuestions(qList) {
+    try {
+      localStorage.setItem('archCustomQuestions', JSON.stringify(qList));
+    } catch(e) {}
+  }
+
+  function addNewGlobalQuestion() {
+    const qText = prompt("Enter the new question to track across all universities:");
+    if (!qText || !qText.trim()) return;
+
+    const list = loadCustomQuestions();
+    const newQ = {
+      id: 'cq_' + Date.now(),
+      prompt: qText.trim()
+    };
+    list.push(newQ);
+    saveCustomQuestions(list);
+    renderCustomQuestions();
+  }
+
+  function deleteGlobalQuestion(id) {
+    if (confirm("Remove this question from all universities?")) {
+      let list = loadCustomQuestions().filter(q => q.id !== id);
+      saveCustomQuestions(list);
+      renderCustomQuestions();
+    }
+  }
+
+  function renderCustomQuestions() {
+    const container = document.getElementById('custom-questions-list');
+    if (!container) return;
+    const list = loadCustomQuestions();
+
+    if (list.length === 0) {
+      container.innerHTML = '<p style="font-size:12px; color:var(--muted); margin-bottom:6px;">No custom questions yet. Add any new question here and it will appear on every university automatically.</p>';
+      return;
+    }
+
+    let html = '';
+    list.forEach(q => {
+      const val = currentRecord[q.id] || '';
+      html += `
+        <div class="q-block">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div class="q-title">${q.prompt}</div>
+            <button type="button" class="btn-danger" style="margin-left:10px;" onclick="deleteGlobalQuestion('${q.id}')">✕</button>
+          </div>
+          <input type="text" id="${q.id}" placeholder="Notes on this question..." value="${val}">
+        </div>`;
+    });
+    container.innerHTML = html;
+  }
+
   function loadAll() {
-    return JSON.parse(localStorage.getItem('archDetailedUnis') || '[]');
+    try {
+      return JSON.parse(localStorage.getItem('archDetailedUnis') || '[]');
+    } catch (e) {
+      return [];
+    }
   }
 
   function saveAll(list) {
-    localStorage.setItem('archDetailedUnis', JSON.stringify(list));
+    try {
+      localStorage.setItem('archDetailedUnis', JSON.stringify(list));
+    } catch (e) {}
   }
 
   function switchTab(tabId) {
     document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + tabId).classList.add('active');
-    document.getElementById('btn-tab-' + tabId).classList.add('active');
+    const target = document.getElementById('tab-' + tabId);
+    const btn = document.getElementById('btn-tab-' + tabId);
+    if (target) target.classList.add('active');
+    if (btn) btn.classList.add('active');
 
     if (tabId === 'list') renderList();
     if (tabId === 'compare') renderComparison();
@@ -490,6 +570,7 @@
     currentRecord = {};
     document.querySelectorAll('input[type="text"], textarea').forEach(i => i.value = '');
     document.querySelectorAll('.selected').forEach(e => e.classList.remove('selected'));
+    renderCustomQuestions();
     switchTab('entry');
   }
 
@@ -501,7 +582,6 @@
     editingId = id;
     currentRecord = { ...item };
 
-    // Fill all text inputs
     const textIds = [
       'uni-name', 'q_maths_notes', 'q_cost_notes', 'studio_light_notes',
       'workshop_equipment', 'workshop_material_shop', 'split_design', 'split_tech',
@@ -509,12 +589,13 @@
       'model_carrying_notes', 'amenities_notes', 'accom_costs_notes',
       'sports_quality_notes', 'sports_cost_notes'
     ];
-    textIds.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = item[id] || '';
+    textIds.forEach(tId => {
+      const el = document.getElementById(tId);
+      if (el) el.value = item[tId] || '';
     });
 
-    // Restore selected chips & ratings
+    renderCustomQuestions();
+
     document.querySelectorAll('.chip').forEach(c => {
       const key = c.parentElement.dataset.key;
       c.classList.toggle('selected', currentRecord[key] === c.innerText);
@@ -537,13 +618,13 @@
   }
 
   function saveRecord() {
-    const name = document.getElementById('uni-name').value.trim();
+    const nameEl = document.getElementById('uni-name');
+    const name = nameEl ? nameEl.value.trim() : '';
     if (!name) { alert('Please enter a university name'); return; }
 
     currentRecord.name = name;
     currentRecord.date = currentRecord.date || new Date().toLocaleDateString('en-GB');
 
-    // Save text inputs into object
     const textIds = [
       'uni-name', 'q_maths_notes', 'q_cost_notes', 'studio_light_notes',
       'workshop_equipment', 'workshop_material_shop', 'split_design', 'split_tech',
@@ -551,9 +632,16 @@
       'model_carrying_notes', 'amenities_notes', 'accom_costs_notes',
       'sports_quality_notes', 'sports_cost_notes'
     ];
-    textIds.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) currentRecord[id] = el.value.trim();
+    textIds.forEach(tId => {
+      const el = document.getElementById(tId);
+      if (el) currentRecord[tId] = el.value.trim();
+    });
+
+    // Save custom questions data
+    const customList = loadCustomQuestions();
+    customList.forEach(q => {
+      const el = document.getElementById(q.id);
+      if (el) currentRecord[q.id] = el.value.trim();
     });
 
     let list = loadAll();
@@ -570,6 +658,7 @@
   function renderList() {
     const list = loadAll();
     const container = document.getElementById('uni-list-container');
+    if (!container) return;
     if (list.length === 0) {
       container.innerHTML = '<div class="section-card" style="padding:24px; text-align:center; color:var(--muted);"><p>No universities visited yet.</p><p>Tap <strong>+ Add Uni</strong> to record your first visit.</p></div>';
       return;
@@ -586,7 +675,7 @@
           </div>
           <div style="text-align:right;">
             <div class="score-badge ${isHigh}">${score}</div>
-            <div style="margin-top:6px;"><button class="btn-danger" onclick="deleteUni('${u.id}', event)">Delete</button></div>
+            <div style="margin-top:6px;"><button type="button" class="btn-danger" onclick="deleteUni('${u.id}', event)">Delete</button></div>
           </div>
         </div>`;
     });
@@ -596,6 +685,7 @@
   function renderComparison() {
     const list = loadAll();
     const container = document.getElementById('compare-content');
+    if (!container) return;
     if (list.length === 0) {
       container.innerHTML = '<p style="color:var(--muted); text-align:center; padding:16px;">Save universities first to compare them.</p>';
       return;
@@ -603,6 +693,8 @@
     let html = '<table><thead><tr><th>Metric</th>';
     list.forEach(u => html += `<th class="uni-col-head">${u.name}</th>`);
     html += '</tr></thead><tbody>';
+
+    const customQs = loadCustomQuestions();
 
     const rows = [
       { cat: 'High-Level Ratings' },
@@ -620,8 +712,17 @@
       { label: 'All-Nighters', key: 'q_allnighters' },
       { label: 'Sports Weds Free?', key: 'q_sports_wed' },
       { label: 'Material Costs', key: 'q_cost_notes' },
-      { label: 'Maths / Engineering', key: 'q_maths_notes' },
+      { label: 'Maths / Engineering', key: 'q_maths_notes' }
+    ];
 
+    if (customQs.length > 0) {
+      rows.push({ cat: 'Custom Questions' });
+      customQs.forEach(cq => {
+        rows.push({ label: cq.prompt, key: cq.id });
+      });
+    }
+
+    rows.push(
       { cat: 'Detailed Studios & Workshops' },
       { label: 'Studio Hours', key: 'studio_access' },
       { label: 'Desk Storage', key: 'studio_storage' },
@@ -640,7 +741,7 @@
       { label: 'Carrying Models to Halls', key: 'model_carrying_notes' },
       { label: '1st Year Accomm Guarantee', key: 'accom_guarantee' },
       { label: 'Hall Desk Space (A1 Mat)', key: 'accom_desk_size' }
-    ];
+    );
 
     rows.forEach(r => {
       if (r.cat) {
@@ -666,6 +767,8 @@
       return;
     }
 
+    const customQs = loadCustomQuestions();
+
     let text = "🏛️ ARCHITECTURE OPEN DAY COMPARISON SUMMARY\n";
     text += "========================================\n\n";
 
@@ -683,6 +786,14 @@
       if (u.q_cost_notes) text += `• Material Costs: ${u.q_cost_notes}\n`;
       if (u.q_maths_notes) text += `• Engineering/Maths: ${u.q_maths_notes}\n`;
       if (u.model_carrying_notes) text += `• Carrying Models: ${u.model_carrying_notes}\n`;
+      
+      if (customQs.length > 0) {
+        text += `• Custom Notes:\n`;
+        customQs.forEach(cq => {
+          if (u[cq.id]) text += `   - ${cq.prompt}: ${u[cq.id]}\n`;
+        });
+      }
+
       text += "\n----------------------------------------\n\n";
     });
 
@@ -698,6 +809,7 @@
   }
 
   renderList();
+  renderCustomQuestions();
 </script>
 </body>
 </html>
