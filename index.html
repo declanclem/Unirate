@@ -42,15 +42,14 @@
   input[type="text"], textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 15px; margin-top: 6px; background: #FFF; }
   textarea { height: 60px; resize: none; }
   .btn-submit { width: 100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .btn-share { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
   
-  /* Uni List Card */
   .uni-item { display: flex; justify-content: space-between; align-items: center; padding: 14px; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
   .uni-item-title { font-size: 17px; font-weight: 700; color: var(--primary); }
   .uni-item-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
   .score-badge { display: inline-block; padding: 4px 10px; border-radius: 16px; font-weight: 700; background: #E2E8F0; font-size: 13px; }
   .score-badge.high { background: #DCFCE7; color: #15803D; }
 
-  /* Comparison Matrix */
   table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
   th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { background: #F1F5F9; font-weight: 700; color: var(--muted); min-width: 120px; }
@@ -69,13 +68,13 @@
   </div>
 </header>
 
-<!-- TAB 1: LIST OF SAVED UNIVERSITIES -->
+<!-- TAB 1: LIST -->
 <div class="container active" id="tab-list">
   <div id="uni-list-container"></div>
   <button class="btn-submit" onclick="startNewUni()" style="margin-top:10px;">+ Add New University</button>
 </div>
 
-<!-- TAB 2: SCORE / EDIT ENTRY FORM -->
+<!-- TAB 2: SCORE / EDIT ENTRY -->
 <div class="container" id="tab-entry">
   <div class="card">
     <label style="font-weight:700; font-size:13px; color:var(--muted);">UNIVERSITY NAME</label>
@@ -166,8 +165,9 @@
   <button class="btn-submit" onclick="saveRecord()">Save University</button>
 </div>
 
-<!-- TAB 3: COMPARISON MATRIX -->
+<!-- TAB 3: COMPARE & SHARE -->
 <div class="container" id="tab-compare">
+  <button class="btn-share" onclick="shareSummary()">📤 Share Summary</button>
   <div class="card" style="padding:10px;">
     <div class="card-title">Full Comparison Matrix</div>
     <div id="compare-content" style="overflow-x:auto;"></div>
@@ -231,7 +231,6 @@
     document.getElementById('notes-maths').value = item.mathsNotes || '';
     document.getElementById('cost-notes').value = item.costNotes || '';
 
-    // Restore selected states
     document.querySelectorAll('.chip').forEach(c => {
       const key = c.parentElement.dataset.key;
       c.classList.toggle('selected', currentRecord[key] === c.innerText);
@@ -336,7 +335,37 @@
     container.innerHTML = html;
   }
 
-  // Initial load
+  function shareSummary() {
+    const list = loadAll();
+    if (list.length === 0) {
+      alert('No universities to share yet.');
+      return;
+    }
+
+    let text = "🏛️ Architecture Open Day Tour Summary:\n\n";
+    list.forEach(u => {
+      text += `📍 ${u.name.toUpperCase()} (Score: ${u.overall || '—'}/5)\n`;
+      text += `• Ethos: ${u.ethos || '—'} | ARB: ${u.arb || '—'}\n`;
+      text += `• Desks: ${u.desk || '—'} | Crits: ${u.crits || '—'}/5\n`;
+      text += `• Workshop Queues: ${u.queues || '—'}\n`;
+      text += `• All-Nighters: ${u.allnighters || '—'}\n`;
+      text += `• Sports Weds: ${u.sports || '—'}\n`;
+      if (u.costNotes) text += `• Costs: ${u.costNotes}\n`;
+      if (u.mathsNotes) text += `• Maths Support: ${u.mathsNotes}\n`;
+      text += "\n";
+    });
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Architecture University Comparison',
+        text: text
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+      alert('Summary copied to clipboard! You can now paste it into any messaging app.');
+    }
+  }
+
   renderList();
 </script>
 </body>
